@@ -4,7 +4,7 @@ BloomDays – Daily Habit Tracker is a React Native app for building small daily
 
 ## Run the project
 
-1. Install Node.js 22 LTS and unzip the project.
+1. Install Node.js 22 LTS (22.13.0 or later) and unzip the project.
 2. In the BloomDays folder, run:
 
    ```sh
@@ -12,7 +12,9 @@ BloomDays – Daily Habit Tracker is a React Native app for building small daily
    npm start
    ```
 
-3. Open the project with [Expo Go for SDK 54](https://expo.dev/go?device=true&platform=android&sdkVersion=54) on Android. Connect the computer and phone to the same Wi-Fi for development, then scan the terminal QR code. With an Android emulator configured, you can press **a** in the Expo terminal instead.
+3. Open the project with [Expo Go for SDK 58](https://expo.dev/go?device=true&platform=android&sdkVersion=58) on Android. Connect the computer and phone to the same Wi-Fi for development, then scan the terminal QR code. With an Android emulator configured, you can press **a** in the Expo terminal instead.
+
+If Expo Go asks you to sign in, use the same Expo account on your phone and in the terminal (`npx expo login`), then scan again.
 
 Metro serves the JavaScript bundle during development. For an installed Android build that opens without Metro, install Android Studio and configure the Android SDK and JDK, then run `npx expo run:android --variant release` with a device or emulator connected. Build tools may need internet on the first build. The installed app stores its data on the device and has no account, server, public API, or remote database.
 
