@@ -1,6 +1,6 @@
 # BloomDays 🌱
 
-BloomDays – Daily Habit Tracker is a React Native app for building small daily routines. Its garden fills as you finish habits each day. Five original starter habits are included.
+BloomDays – Daily Habit Tracker is a React Native app for building small daily routines. It combines a daily check-in dashboard, flexible weekday schedules, and a weekly consistency report. Five original starter habits are included.
 
 ## Run the project
 
@@ -22,11 +22,11 @@ Metro serves the JavaScript bundle during development. For an installed Android 
 
 | Screen | What you can do |
 | --- | --- |
-| Today | Check habits off and see daily completion |
-| Garden | Search names, notes, and categories. Filter by category and completion |
-| Progress | Review seven days of check-ins and the longest active streak |
+| Today | Check off scheduled habits and review pending and completed groups |
+| Manage Habits | Search names, notes, and categories. Filter and open a habit to manage it |
+| Progress | Browse seven-day reports with completion rates, total check-ins, and active streaks |
 | Habit details | Read notes, see recent check-ins, and edit or delete the habit |
-| Habit form | Create or edit a habit and choose its category |
+| Habit form | Create or edit a habit, select its category, and choose repeat days |
 
 ## How the code works
 
@@ -36,7 +36,7 @@ Metro serves the JavaScript bundle during development. For an installed Android 
 - `src/habits.js` contains the original dataset and tracking logic.
 - `src/storage.js` saves and loads habits with AsyncStorage. Each habit has an ID, a name, a category, a note, and a list of local calendar dates when it was completed. Starter habits are copied into storage on first launch.
 
-A streak counts consecutive completed days up to today, or up to yesterday if today's habit is still pending. Deleting a habit also removes its check-ins from Progress.
+New habits record their creation date and schedule changes record their effective date. Habits saved by earlier versions default to a daily schedule and keep their existing check-ins. A streak counts consecutive scheduled check-ins, skipping rest days and allowing today to remain pending. Weekly consistency divides completed check-ins by scheduled check-ins for the selected seven-day period. Deleting a habit also removes its check-ins from Progress.
 
 ## Checks and demonstration
 

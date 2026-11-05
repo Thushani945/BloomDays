@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, BackHandler, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { dateKey, toggleDay } from './src/habits';
-import { Details, Garden, HabitForm, Progress, Today } from './src/screens';
+import { dateKey, isScheduled, toggleDay, updateSchedule } from './src/habits';
+import { Details, ManageHabits, HabitForm, Progress, Today } from './src/screens';
 import { loadHabits, saveHabits } from './src/storage';
 import { Button, color, Empty } from './src/ui';
 
 const tabs = [
   { name: 'Today', icon: '☀' },
-  { name: 'Garden', icon: '✿' },
+  { name: 'Habits', icon: '✿' },
   { name: 'Progress', icon: '↗' },
 ];
 
@@ -81,15 +81,18 @@ function Tracker() {
   function toggle(id) {
     const currentDate = new Date();
     setNow(currentDate);
-    update(habits.map(item => item.id === id
-      ? { ...item, days: toggleDay(item.days, dateKey(currentDate)) }
+    const key = dateKey(currentDate);
+    update(habits.map(item => item.id === id && (item.days.includes(key) || isScheduled(item, currentDate, key))
+      ? { ...item, days: toggleDay(item.days, key) }
       : item));
   }
 
-  function save(fields) {
+  function save({ selectedDays, ...fields }) {
+    const createdOn = dateKey();
+    const schedule = updateSchedule(habit ?? {}, selectedDays, createdOn);
     const next = habit
-      ? habits.map(item => item.id === habit.id ? { ...item, ...fields } : item)
-      : [...habits, { ...fields, id: String(Date.now()), days: [] }];
+      ? habits.map(item => item.id === habit.id ? { ...item, ...fields, schedule } : item)
+      : [...habits, { ...fields, id: String(Date.now()), days: [], createdOn, schedule }];
     update(next, popRoute);
   }
 
@@ -101,10 +104,10 @@ function Tracker() {
     screen = <Empty title="Opening your garden">Loading saved habits…</Empty>;
   } else {
     switch (route.name) {
-      case 'Garden': screen = <Garden {...listProps} />; break;
+      case 'Habits': screen = <ManageHabits {...listProps} />; break;
       case 'Progress': screen = <Progress habits={habits} now={now} />; break;
-      case 'Form': screen = <HabitForm habit={habit} save={save} />; break;
-      case 'Details': screen = habit && <Details {...{ habit, now, today, toggle }}
+      case 'Form': screen = <HabitForm habit={habit} today={today} save={save} />; break;
+      case 'Details': screen = habit && <Details {...{ habit, now, today }}
         edit={() => push('Form', habit.id)}
         remove={() => update(habits.filter(item => item.id !== habit.id), popRoute)} />; break;
       default: screen = <Today {...listProps} />;

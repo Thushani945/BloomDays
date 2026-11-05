@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { dateKey, filterHabits, starterHabits, streak, toggleDay } from '../src/habits.js';
+import { dateKey, filterHabits, isScheduled, reportDays, scheduledStreak, starterHabits, streak, toggleDay, updateSchedule } from '../src/habits.js';
 
 const jan1 = new Date(2026, 0, 1, 12);
 
@@ -29,4 +29,32 @@ test('search matches notes and combines with category and completion filters', (
   assert.deepEqual(filterHabits(habits, ' AFTER CLASS ', 'Movement', true, today).map(habit => habit.id), ['walk']);
   assert.deepEqual(filterHabits(habits, '', 'Learning', true, today), []);
   assert.equal(filterHabits(habits, '', 'All', false, today).length, 5);
+});
+
+test('scheduled streak skips rest days but stops at a missed check-in', () => {
+  const monday = new Date(2026, 0, 5, 12);
+  const habit = {
+    createdOn: '2026-01-01',
+    schedule: [{ from: '2026-01-01', weekdays: [1, 3, 5] }],
+    days: ['2026-01-02', '2026-01-05'],
+  };
+  assert.equal(scheduledStreak(habit, monday), 2);
+  assert.equal(scheduledStreak(habit, new Date(2026, 0, 8, 12)), 0);
+});
+
+test('schedule edits apply forward and keep historical check-ins visible', () => {
+  const friday = new Date(2026, 0, 2, 12);
+  const habit = { days: ['2026-01-01', '2026-01-02'], createdOn: '2026-01-01' };
+  habit.schedule = updateSchedule(habit, [1, 2], dateKey(friday));
+  assert.equal(isScheduled(habit, jan1), true);
+  assert.equal(isScheduled(habit, friday), false);
+  const report = reportDays([habit], friday);
+  assert.deepEqual(report.slice(-3).map(day => [day.done, day.planned]), [[0, 0], [1, 1], [1, 1]]);
+});
+
+test('legacy daily habits keep their completion history and remain scheduled', () => {
+  const legacy = { days: ['2026-01-01'] };
+  assert.equal(isScheduled(legacy, jan1), true);
+  assert.equal(scheduledStreak(legacy, jan1), 1);
+  assert.equal(reportDays([legacy], jan1, 1)[6].key, '2025-12-25');
 });
