@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "BloomDays",
+    "slug": "bloomdays",
+    "version": "1.0.0",
+    "userInterfaceStyle": "light",
+    "android": { "package": "com.bloomdays.habittracker" },
+    "ios": { "bundleIdentifier": "com.bloomdays.habittracker" }
+  }
+}
