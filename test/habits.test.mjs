@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { dateKey, filterHabits, isScheduled, reportDays, scheduledStreak, starterHabits, streak, toggleDay, updateSchedule } from '../src/habits.js';
+import { dateKey, filterHabits, isScheduled, reportDays, scheduledStreak, starterHabits, streak, toggleDay, updateSchedule, weeklyPlan } from '../src/habits.js';
 
 const jan1 = new Date(2026, 0, 1, 12);
 
@@ -57,4 +57,14 @@ test('legacy daily habits keep their completion history and remain scheduled', (
   assert.equal(isScheduled(legacy, jan1), true);
   assert.equal(scheduledStreak(legacy, jan1), 1);
   assert.equal(reportDays([legacy], jan1, 1)[6].key, '2025-12-25');
+});
+
+test('planner counts repeat days regardless of completion history', () => {
+  const mondayOnly = { days: [], schedule: [{ from: '2026-01-01', weekdays: [1] }] };
+  const legacy = { days: ['2026-01-01'] };
+  assert.deepEqual(weeklyPlan([mondayOnly, legacy], '2026-01-01'), [
+    { day: 1, count: 2 }, { day: 2, count: 1 }, { day: 3, count: 1 },
+    { day: 4, count: 1 }, { day: 5, count: 1 }, { day: 6, count: 1 },
+    { day: 0, count: 1 },
+  ]);
 });

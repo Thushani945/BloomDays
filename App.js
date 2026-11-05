@@ -104,7 +104,7 @@ function Tracker() {
     screen = <Empty title="Opening your garden">Loading saved habits…</Empty>;
   } else {
     switch (route.name) {
-      case 'Habits': screen = <ManageHabits {...listProps} />; break;
+      case 'Habits': screen = <ManageHabits {...listProps} edit={id => push('Form', id)} />; break;
       case 'Progress': screen = <Progress habits={habits} now={now} />; break;
       case 'Form': screen = <HabitForm habit={habit} today={today} save={save} />; break;
       case 'Details': screen = habit && <Details {...{ habit, now, today }}

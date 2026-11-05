@@ -77,3 +77,13 @@ export function reportDays(habits, now, weeksAgo = 0) {
     return { key, date, done: done.length, planned: planned.length };
   });
 }
+
+export const plannerWeek = [1, 2, 3, 4, 5, 6, 0];
+
+export function weeklyPlan(habits, key) {
+  const schedules = habits.map(habit => scheduleOn(habit, key));
+  return plannerWeek.map(day => ({
+    day,
+    count: schedules.filter(schedule => schedule.includes(day)).length,
+  }));
+}

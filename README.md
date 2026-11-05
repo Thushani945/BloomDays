@@ -23,7 +23,7 @@ Metro serves the JavaScript bundle during development. For an installed Android 
 | Screen | What you can do |
 | --- | --- |
 | Today | Check off scheduled habits and review pending and completed groups |
-| Manage Habits | Search names, notes, and categories. Filter and open a habit to manage it |
+| My Habits | Plan your weekly workload, filter routines by weekday or category, search, and edit directly |
 | Progress | Browse seven-day reports with completion rates, total check-ins, and active streaks |
 | Habit details | Read notes, see recent check-ins, and edit or delete the habit |
 | Habit form | Create or edit a habit, select its category, and choose repeat days |
@@ -42,7 +42,7 @@ New habits record their creation date and schedule changes record their effectiv
 
 Run `npm test` for calendar, streak, search, and completion checks. Run `npm run check:android` to bundle the Android JavaScript.
 
-On a device, add a habit, mark it complete, and check that it appears under Completed today and on Progress. Edit it, close the app, and reopen it to confirm the name and check-in were saved. For the offline demonstration, install the release build, turn on airplane mode, reopen the app, and repeat a check-in.
+On a device, add a habit, mark it complete, and check that it appears in Today’s Completed group and on Progress. Edit it, close the app, and reopen it to confirm the name and check-in were saved. For the offline demonstration, install the release build, turn on airplane mode, reopen the app, and repeat a check-in.
 
 ## GitHub submission
 

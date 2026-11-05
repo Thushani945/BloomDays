@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { categories, filterHabits, isScheduled, reportDays, scheduleOn, scheduledStreak, weekdays } from './habits';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { categories, filterHabits, isScheduled, reportDays, scheduleOn, scheduledStreak, plannerWeek, weekdays, weeklyPlan } from './habits';
 import { Button, color, Empty, Heading, s } from './ui';
 
 function scheduleLabel(habit, today) {
@@ -8,7 +8,7 @@ function scheduleLabel(habit, today) {
   return selected.length === 7 ? 'Every day' : weekdays.filter((_, day) => selected.includes(day)).join(' · ');
 }
 
-function HabitRow({ habit, today, open, toggle }) {
+function CheckInRow({ habit, today, open, toggle }) {
   const category = categories[habit.category];
   const done = habit.days.includes(today);
   return (
@@ -17,18 +17,18 @@ function HabitRow({ habit, today, open, toggle }) {
         <Text style={[styles.icon, { backgroundColor: category.color }]}>{category.icon}</Text>
         <View style={styles.grow}>
           <Text style={s.strong}>{habit.name}</Text>
-          <Text style={s.muted}>{toggle ? habit.category : scheduleLabel(habit, today)}</Text>
+          <Text style={s.muted}>{habit.category}</Text>
         </View>
       </Pressable>
-      {toggle ? <Pressable accessibilityRole="checkbox" accessibilityLabel={habit.name} accessibilityState={{ checked: done }}
+      <Pressable accessibilityRole="checkbox" accessibilityLabel={habit.name} accessibilityState={{ checked: done }}
         onPress={() => toggle(habit.id)} style={[styles.check, done && styles.checked]}>
         <Text style={{ color: done ? color.white : color.green, fontWeight: '800' }}>{done ? '✓' : '○'}</Text>
-      </Pressable> : <Text accessible={false} style={styles.chevron}>›</Text>}
+      </Pressable>
     </View>
   );
 }
 
-export function Today({ habits, now, today, open, toggle, add }) {
+export function Today({ habits, now, today, open, toggle }) {
   const planned = habits.filter(habit => habit.days.includes(today) || isScheduled(habit, now, today));
   const pending = planned.filter(habit => !habit.days.includes(today));
   const completed = planned.filter(habit => habit.days.includes(today));
@@ -50,10 +50,9 @@ export function Today({ habits, now, today, open, toggle, add }) {
       {pending.length === 0 && <Empty title={planned.length ? 'You’re all caught up' : 'Nothing scheduled today'}>
         {planned.length ? 'All of today’s habits are complete.' : 'Add a habit or adjust its schedule in Habits.'}
       </Empty>}
-      {pending.map(habit => <HabitRow key={habit.id} {...{ habit, today, open, toggle }} />)}
+      {pending.map(habit => <CheckInRow key={habit.id} {...{ habit, today, open, toggle }} />)}
       {completed.length > 0 && <Text style={s.section}>Completed · {completed.length}</Text>}
-      {completed.map(habit => <HabitRow key={habit.id} {...{ habit, today, open, toggle }} />)}
-      {habits.length === 0 && <Button label="+ Add Habit" onPress={add} />}
+      {completed.map(habit => <CheckInRow key={habit.id} {...{ habit, today, open, toggle }} />)}
     </>
   );
 }
@@ -71,26 +70,79 @@ function CategoryPicker({ options, value, select }) {
   );
 }
 
-export function ManageHabits({ habits, today, open, add }) {
+function RoutineCard({ habit, today, open, edit }) {
+  const category = categories[habit.category];
+  const schedule = scheduleOn(habit, today);
+  return (
+    <View style={[styles.panel, styles.routineCard]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={'View details for ' + habit.name}
+        onPress={() => open(habit.id)} style={styles.rowMain}>
+        <Text accessible={false} style={[styles.icon, { backgroundColor: category.color }]}>{category.icon}</Text>
+        <View style={styles.grow}>
+          <Text style={s.muted}>{habit.category}</Text>
+          <Text style={s.strong}>{habit.name}</Text>
+        </View>
+        <Text accessible={false} style={styles.chevron}>›</Text>
+      </Pressable>
+      <View style={styles.routineFooter}>
+        <Text style={[styles.chartValue, styles.grow]}>{scheduleLabel(habit, today)}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={'Edit ' + habit.name}
+          onPress={() => edit(habit.id)} style={styles.editLink}>
+          <Text style={styles.chartValue}>Edit</Text>
+        </Pressable>
+      </View>
+      <View style={styles.scheduleStrip} accessible accessibilityLabel={'Repeats ' + scheduleLabel(habit, today)}>
+        {plannerWeek.map(day => (
+          <View key={day} style={[styles.scheduleDay, schedule.includes(day) && styles.scheduleDayActive]}>
+            <Text style={styles.chartValue}>{weekdays[day].slice(0, 2)}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export function ManageHabits({ habits, today, open, add, edit }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
-  const [completedOnly, setCompletedOnly] = useState(false);
-  const results = filterHabits(habits, query, category, completedOnly, today);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const week = weeklyPlan(habits, today);
+  const planned = week.reduce((total, day) => total + day.count, 0);
+  const results = filterHabits(habits, query, category, false, today)
+    .filter(habit => selectedDay === null || scheduleOn(habit, today).includes(selectedDay));
   return (
     <>
-      <Heading eyebrow="HABIT LIBRARY" title="Manage Habits" subtitle="Search, filter, and adjust your routines." />
-      <Button label="+ Add Habit" onPress={add} />
-      <TextInput accessibilityLabel="Search habits" placeholder="Search habits" placeholderTextColor={color.muted}
+      <Heading eyebrow="ROUTINE PLANNER" title="My Habits" subtitle="Build a weekly routine that fits your schedule." />
+      <View style={styles.planner}>
+        <Text style={s.section}>Your weekly plan</Text>
+        <Text style={s.muted}>{habits.length} routines · {planned} planned sessions per week</Text>
+        <View style={styles.scheduleStrip}>
+          {week.map(({ day, count }) => (
+            <Pressable key={day} accessibilityRole="button" accessibilityState={{ selected: day === selectedDay }}
+              accessibilityLabel={weekdays[day] + ', ' + count + ' scheduled'}
+              onPress={() => setSelectedDay(current => current === day ? null : day)}
+              style={[styles.plannerDay, day === selectedDay && styles.activeChip]}>
+              <Text style={styles.plannerLabel}>{weekdays[day].slice(0, 2)}</Text>
+              <Text style={styles.plannerCount}>{count}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={s.muted}>Tap a day to see its routines.</Text>
+      </View>
+      <Button label="+ New Habit" onPress={add} />
+      <TextInput accessibilityLabel="Search routines" placeholder="Search names, categories, or notes" placeholderTextColor={color.muted}
         value={query} onChangeText={setQuery} style={s.input} />
       <CategoryPicker options={['All', ...Object.keys(categories)]} value={category} select={setCategory} />
-      <View style={styles.row}>
-        <Text style={[s.strong, styles.grow]}>Completed today</Text>
-        <Switch accessibilityLabel="Show only habits completed today" value={completedOnly}
-          onValueChange={setCompletedOnly} trackColor={{ true: '#57936D' }} />
-      </View>
-      <Text style={s.muted}>{results.length} {results.length === 1 ? 'habit' : 'habits'}</Text>
-      {results.length === 0 && <Empty title="No habits found">Try a different search or category, or add a habit.</Empty>}
-      {results.map(habit => <HabitRow key={habit.id} {...{ habit, today, open }} />)}
+      <Text style={s.section}>{selectedDay === null ? 'All routines' : weekdays[selectedDay] + ' routines'} · {results.length}</Text>
+      {(selectedDay !== null || category !== 'All' || query !== '') && <Button label="Clear filters" secondary onPress={() => {
+        setSelectedDay(null);
+        setCategory('All');
+        setQuery('');
+      }} />}
+      {results.length === 0 && <Empty title={habits.length ? 'No matching routines' : 'Build your first routine'}>
+        {habits.length ? 'Try another day, category, or search.' : 'Add a habit and choose the days you want to repeat it.'}
+      </Empty>}
+      {results.map(habit => <RoutineCard key={habit.id} {...{ habit, today, open, edit }} />)}
     </>
   );
 }
@@ -185,7 +237,7 @@ export function HabitForm({ habit, today, save }) {
   }
   return (
     <>
-      <Heading eyebrow="03  /  PLANT SOMETHING" title={habit ? 'Edit habit' : 'New habit'} subtitle="Choose an action and the days you want to do it." />
+      <Heading eyebrow="03  /  PLANT SOMETHING" title={habit ? 'Edit Habit' : 'New Habit'} subtitle="Choose an action and the days you want to do it." />
       <Text style={s.strong}>Habit name</Text>
       <TextInput accessibilityLabel="Habit name" placeholder="e.g. Stretch for five minutes" placeholderTextColor={color.muted}
         value={name} onChangeText={value => { setName(value); setError(''); }} maxLength={60} style={s.input} />
@@ -216,6 +268,16 @@ export function HabitForm({ habit, today, save }) {
 }
 
 const styles = StyleSheet.create({
+  planner: { padding: 16, gap: 12, borderRadius: 24, backgroundColor: '#E8E0FB' },
+  scheduleStrip: { flexDirection: 'row', gap: 4 },
+  plannerDay: { flex: 1, minHeight: 54, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: color.white, borderWidth: 1, borderColor: color.white },
+  plannerLabel: { fontSize: 12, fontWeight: '700', color: color.muted },
+  plannerCount: { fontSize: 18, fontWeight: '800', color: color.green },
+  routineCard: { borderColor: color.line, borderWidth: 1 },
+  routineFooter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  scheduleDay: { flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 8, backgroundColor: '#F2F3EE' },
+  scheduleDayActive: { backgroundColor: '#DBF2CD' },
+  editLink: { minHeight: 44, minWidth: 52, justifyContent: 'center', alignItems: 'center', backgroundColor: '#EFF3EA', borderRadius: 12 },
   chevron: { fontSize: 25, color: color.muted, paddingHorizontal: 8 },
   chartValue: { color: color.green, fontWeight: '800' },
   weekNav: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
