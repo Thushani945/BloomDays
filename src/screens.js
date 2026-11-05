@@ -31,13 +31,13 @@ export function Today({ habits, now, today, open, toggle, add }) {
     <>
       <Heading eyebrow="✿  BLOOMDAYS" title="Today" subtitle={day} />
       <View style={styles.hero}>
+        <Text accessible={false} pointerEvents="none" style={styles.flower}>✿</Text>
         <Text style={styles.heroLabel}>YOUR DAILY GARDEN</Text>
         <Text style={styles.heroTitle}>{percent}% in bloom</Text>
         <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percent }} style={styles.track}>
           <View style={[styles.fill, { width: percent + '%' }]} />
         </View>
         <Text style={styles.heroLabel}>{done} of {habits.length} habits completed</Text>
-        <Text accessible={false} style={styles.flower}>✿</Text>
       </View>
       <Text style={s.section}>Daily habits</Text>
       {habits.length === 0 && <Empty title="Plant your first habit">Choose one small action you can do every day.</Empty>}
@@ -101,7 +101,7 @@ export function Progress({ habits, now }) {
     <>
       <Heading eyebrow="02  /  YOUR GROWTH" title="Progress" subtitle="See what you completed over the last seven days." />
       <View style={styles.stats}>
-        <View style={[styles.stat, { backgroundColor: '#EEE0FF' }]}><Text style={styles.statNumber}>{weeklyTotal}</Text><Text style={s.muted}>This week</Text></View>
+        <View style={[styles.stat, { backgroundColor: '#EEE0FF' }]}><Text style={styles.statNumber}>{weeklyTotal}</Text><Text style={s.muted}>Check-ins in 7 days</Text></View>
         <View style={[styles.stat, { backgroundColor: '#DBF2CD' }]}><Text style={styles.statNumber}>{bestStreak}</Text><Text style={s.muted}>Top active streak</Text></View>
       </View>
       <View style={styles.panel}>
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   hero: { backgroundColor: color.green, padding: 22, borderRadius: 26, gap: 12, overflow: 'hidden' },
   heroLabel: { color: '#E1F1DF', fontSize: 13, fontWeight: '700' },
   heroTitle: { color: color.white, fontSize: 32, fontWeight: '800' },
-  flower: { position: 'absolute', top: -26, right: -16, color: '#FFFFFF15', fontSize: 138, zIndex: -1 },
+  flower: { position: 'absolute', top: -26, right: -16, color: '#FFFFFF15', fontSize: 138 },
   track: { height: 9, borderRadius: 6, backgroundColor: '#416650', overflow: 'hidden' },
   fill: { backgroundColor: color.lime, height: '100%', borderRadius: 6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

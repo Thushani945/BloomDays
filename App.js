@@ -42,8 +42,12 @@ function Tracker() {
     };
   }, []);
 
-  function back() {
+  function popRoute() {
     setRoutes(current => current.length > 1 ? current.slice(0, -1) : current);
+  }
+
+  function back() {
+    if (!saving.current) popRoute();
   }
 
   useEffect(() => {
@@ -56,6 +60,7 @@ function Tracker() {
   }, [routes.length]);
 
   function push(name, id) {
+    if (saving.current) return;
     setRoutes(current => [...current, { name, id }]);
   }
 
@@ -85,7 +90,7 @@ function Tracker() {
     const next = habit
       ? habits.map(item => item.id === habit.id ? { ...item, ...fields } : item)
       : [...habits, { ...fields, id: String(Date.now()), days: [] }];
-    update(next, back);
+    update(next, popRoute);
   }
 
   const listProps = { habits, now, today, toggle, open: id => push('Details', id), add: () => push('Form') };
@@ -101,7 +106,7 @@ function Tracker() {
       case 'Form': screen = <HabitForm habit={habit} save={save} />; break;
       case 'Details': screen = habit && <Details {...{ habit, now, today, toggle }}
         edit={() => push('Form', habit.id)}
-        remove={() => update(habits.filter(item => item.id !== habit.id), back)} />; break;
+        remove={() => update(habits.filter(item => item.id !== habit.id), popRoute)} />; break;
       default: screen = <Today {...listProps} />;
     }
   }
