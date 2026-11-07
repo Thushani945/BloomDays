@@ -1,4 +1,4 @@
-# BloomDays 🌱
+# BloomDays 
 
 BloomDays – Daily Habit Tracker is a React Native app for building small daily routines. It combines a daily check-in dashboard, flexible weekday schedules, and a weekly consistency report. Five original starter habits are included.
 
