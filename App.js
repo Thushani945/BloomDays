@@ -129,7 +129,7 @@ function Tracker() {
           return <Pressable key={tab.name} accessibilityRole="tab" accessibilityLabel={tab.name} accessibilityState={{ selected: active }}
             onPress={() => setRoutes([{ name: tab.name }])} style={[styles.tab, active && styles.active]}>
             <Text style={styles.tabIcon}>{tab.icon}</Text>
-            <Text style={styles.tabText}>{tab.name}</Text>
+           <Text style={styles.tabText}>{tab.name === 'Habits' ? 'My Habits' : tab.name}</Text>
           </Pressable>;
         })}
       </View>}
