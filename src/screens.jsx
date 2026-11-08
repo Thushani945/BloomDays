@@ -29,30 +29,69 @@ function CheckInRow({ habit, today, open, toggle }) {
 }
 
 export function Today({ habits, now, today, open, toggle }) {
-  const planned = habits.filter(habit => habit.days.includes(today) || isScheduled(habit, now, today));
-  const pending = planned.filter(habit => !habit.days.includes(today));
+  const planned = habits.filter(
+    habit => habit.days.includes(today) || isScheduled(habit, now, today)
+  );
   const completed = planned.filter(habit => habit.days.includes(today));
-  const percent = planned.length ? Math.round(completed.length / planned.length * 100) : 0;
-  const day = now.toLocaleDateString('en-LK', { weekday: 'long', month: 'long', day: 'numeric' });
+  const percent = planned.length
+    ? Math.round((completed.length / planned.length) * 100)
+    : 0;
+  const day = now.toLocaleDateString('en-LK', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
     <>
       <Heading eyebrow="✿  BLOOMDAYS" title="Today" subtitle={day} />
+
       <View style={styles.hero}>
         <Text accessible={false} pointerEvents="none" style={styles.flower}>✿</Text>
         <Text style={styles.heroLabel}>DAILY CHECK-IN</Text>
-        <Text style={styles.heroTitle}>{planned.length ? percent + '% complete' : 'Rest day'}</Text>
-        <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percent }} style={styles.track}>
-          <View style={[styles.fill, { width: percent + '%' }]} />
+        <Text style={styles.heroTitle}>
+          {planned.length ? `${percent}% complete` : 'Rest day'}
+        </Text>
+        <View
+          accessibilityRole="progressbar"
+          accessibilityValue={{ min: 0, max: 100, now: percent }}
+          style={styles.track}
+        >
+          <View style={[styles.fill, { width: `${percent}%` }]} />
         </View>
-        <Text style={styles.heroLabel}>{completed.length} of {planned.length} scheduled habits complete</Text>
+        <Text style={styles.heroLabel}>
+          {completed.length} of {planned.length} scheduled habits complete
+        </Text>
       </View>
-      <Text style={s.section}>Up next · {pending.length}</Text>
-      {pending.length === 0 && <Empty title={planned.length ? 'You’re all caught up' : 'Nothing scheduled today'}>
-        {planned.length ? 'All of today’s habits are complete.' : 'Add a habit or adjust its schedule in Habits.'}
-      </Empty>}
-      {pending.map(habit => <CheckInRow key={habit.id} {...{ habit, today, open, toggle }} />)}
-      {completed.length > 0 && <Text style={s.section}>Completed · {completed.length}</Text>}
-      {completed.map(habit => <CheckInRow key={habit.id} {...{ habit, today, open, toggle }} />)}
+
+      {planned.length === 0 && (
+        <Empty title="Nothing scheduled today">
+          Add a habit or adjust its schedule in My Habits.
+        </Empty>
+      )}
+
+      {['Morning', 'Afternoon', 'Evening', 'Anytime'].map(period => {
+        const group = planned.filter(
+          habit => (habit.timeOfDay ?? 'Anytime') === period
+        );
+
+        if (group.length === 0) return null;
+
+        return (
+          <React.Fragment key={period}>
+            <Text style={s.section}>{period} · {group.length}</Text>
+            {group.map(habit => (
+              <CheckInRow
+                key={habit.id}
+                habit={habit}
+                today={today}
+                open={open}
+                toggle={toggle}
+              />
+            ))}
+          </React.Fragment>
+        );
+      })}
     </>
   );
 }
@@ -222,8 +261,10 @@ export function HabitForm({ habit, today, save }) {
   const [name, setName] = useState(habit?.name ?? '');
   const [category, setCategory] = useState(habit?.category ?? 'Wellness');
   const [note, setNote] = useState(habit?.note ?? '');
+  const [timeOfDay, setTimeOfDay] = useState(habit?.timeOfDay ?? 'Anytime');
   const [selectedDays, setSelectedDays] = useState(() => scheduleOn(habit ?? {}, today));
   const [error, setError] = useState('');
+
   function submit() {
     if (!name.trim()) {
       setError('Enter a habit name to continue.');
@@ -233,8 +274,15 @@ export function HabitForm({ habit, today, save }) {
       setError('Choose at least one day.');
       return;
     }
-    save({ name: name.trim(), category, note: note.trim(), selectedDays });
+    save({
+      name: name.trim(),
+      category,
+      note: note.trim(),
+      selectedDays,
+      timeOfDay,
+    });
   }
+
   return (
     <>
       <Heading eyebrow="03  /  PLANT SOMETHING" title={habit ? 'Edit Habit' : 'New Habit'} subtitle="Choose an action and the days you want to do it." />
@@ -246,6 +294,14 @@ export function HabitForm({ habit, today, save }) {
       <Text style={s.strong}>Note (optional)</Text>
       <TextInput accessibilityLabel="Habit note" placeholder="When or how will you do it?" placeholderTextColor={color.muted}
         value={note} onChangeText={setNote} maxLength={240} multiline style={[s.input, { minHeight: 100, textAlignVertical: 'top' }]} />
+
+      <Text style={s.strong}>Time of day</Text>
+      <CategoryPicker
+        options={['Anytime', 'Morning', 'Afternoon', 'Evening']}
+        value={timeOfDay}
+        select={setTimeOfDay}
+      />
+
       <Text style={s.strong}>Repeat on</Text>
       <View style={styles.chips}>
         {weekdays.map((label, day) => {
@@ -266,7 +322,6 @@ export function HabitForm({ habit, today, save }) {
     </>
   );
 }
-
 const styles = StyleSheet.create({
   planner: { padding: 16, gap: 12, borderRadius: 24, backgroundColor: '#E8E0FB' },
   scheduleStrip: { flexDirection: 'row', gap: 4 },
