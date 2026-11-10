@@ -7,6 +7,18 @@ function scheduleLabel(habit, today) {
   const selected = scheduleOn(habit, today);
   return selected.length === 7 ? 'Every day' : weekdays.filter((_, day) => selected.includes(day)).join(' · ');
 }
+function HabitTiming({ habit }) {
+  const details = [];
+
+  if (habit.targetTime) details.push(habit.targetTime);
+  if (habit.durationMinutes != null) {
+    details.push(`${habit.durationMinutes} min`);
+  }
+
+  if (details.length === 0) return null;
+
+  return <Text style={s.muted}>{details.join(' · ')}</Text>;
+}
 
 function CheckInRow({ habit, today, open, toggle }) {
   const category = categories[habit.category];
@@ -18,6 +30,7 @@ function CheckInRow({ habit, today, open, toggle }) {
         <View style={styles.grow}>
           <Text style={s.strong}>{habit.name}</Text>
           <Text style={s.muted}>{habit.category}</Text>
+          <HabitTiming habit={habit} />
         </View>
       </Pressable>
       <Pressable accessibilityRole="checkbox" accessibilityLabel={habit.name} accessibilityState={{ checked: done }}
@@ -120,6 +133,7 @@ function RoutineCard({ habit, today, open, edit }) {
         <View style={styles.grow}>
           <Text style={s.muted}>{habit.category}</Text>
           <Text style={s.strong}>{habit.name}</Text>
+          <HabitTiming habit={habit} />
         </View>
         <Text accessible={false} style={styles.chevron}>›</Text>
       </Pressable>
@@ -262,6 +276,10 @@ export function HabitForm({ habit, today, save }) {
   const [category, setCategory] = useState(habit?.category ?? 'Wellness');
   const [note, setNote] = useState(habit?.note ?? '');
   const [timeOfDay, setTimeOfDay] = useState(habit?.timeOfDay ?? 'Anytime');
+  const [targetTime, setTargetTime] = useState(habit?.targetTime ?? '');
+  const [duration, setDuration] = useState(
+    habit?.durationMinutes == null ? '' : String(habit.durationMinutes)
+  );
   const [selectedDays, setSelectedDays] = useState(() => scheduleOn(habit ?? {}, today));
   const [error, setError] = useState('');
 
@@ -274,26 +292,63 @@ export function HabitForm({ habit, today, save }) {
       setError('Choose at least one day.');
       return;
     }
+
+    const time = targetTime.trim();
+    const minutes = duration.trim();
+
+    if (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+      setError('Enter a time in 24-hour format, e.g. 16:00.');
+      return;
+    }
+    if (minutes && (!/^\d+$/.test(minutes) || Number(minutes) < 1 || Number(minutes) > 1440)) {
+      setError('Enter a duration from 1 to 1440 minutes.');
+      return;
+    }
+
     save({
       name: name.trim(),
       category,
       note: note.trim(),
       selectedDays,
       timeOfDay,
+      targetTime: time,
+      durationMinutes: minutes ? Number(minutes) : null,
     });
   }
 
   return (
     <>
-      <Heading eyebrow="03  /  PLANT SOMETHING" title={habit ? 'Edit Habit' : 'New Habit'} subtitle="Choose an action and the days you want to do it." />
+      <Heading
+        eyebrow="03  /  PLANT SOMETHING"
+        title={habit ? 'Edit Habit' : 'New Habit'}
+        subtitle="Choose an action and the days you want to do it."
+      />
+
       <Text style={s.strong}>Habit name</Text>
-      <TextInput accessibilityLabel="Habit name" placeholder="e.g. Stretch for five minutes" placeholderTextColor={color.muted}
-        value={name} onChangeText={value => { setName(value); setError(''); }} maxLength={60} style={s.input} />
+      <TextInput
+        accessibilityLabel="Habit name"
+        placeholder="e.g. Stretch for five minutes"
+        placeholderTextColor={color.muted}
+        value={name}
+        onChangeText={value => { setName(value); setError(''); }}
+        maxLength={60}
+        style={s.input}
+      />
+
       <Text style={s.strong}>Category</Text>
       <CategoryPicker options={Object.keys(categories)} value={category} select={setCategory} />
+
       <Text style={s.strong}>Note (optional)</Text>
-      <TextInput accessibilityLabel="Habit note" placeholder="When or how will you do it?" placeholderTextColor={color.muted}
-        value={note} onChangeText={setNote} maxLength={240} multiline style={[s.input, { minHeight: 100, textAlignVertical: 'top' }]} />
+      <TextInput
+        accessibilityLabel="Habit note"
+        placeholder="When or how will you do it?"
+        placeholderTextColor={color.muted}
+        value={note}
+        onChangeText={setNote}
+        maxLength={240}
+        multiline
+        style={[s.input, { minHeight: 100, textAlignVertical: 'top' }]}
+      />
 
       <Text style={s.strong}>Time of day</Text>
       <CategoryPicker
@@ -302,26 +357,60 @@ export function HabitForm({ habit, today, save }) {
         select={setTimeOfDay}
       />
 
+      <Text style={s.strong}>Target time (optional)</Text>
+      <TextInput
+        accessibilityLabel="Target time"
+
+        
+        placeholder="HH:MM, e.g. 16:00"
+        placeholderTextColor={color.muted}
+        value={targetTime}
+        onChangeText={value => { setTargetTime(value); setError(''); }}
+        maxLength={5}
+        style={s.input}
+      />
+
+      <Text style={s.strong}>Duration in minutes (optional)</Text>
+      <TextInput
+        accessibilityLabel="Duration in minutes"
+        placeholder="e.g. 25"
+        placeholderTextColor={color.muted}
+        value={duration}
+        onChangeText={value => { setDuration(value); setError(''); }}
+        keyboardType="number-pad"
+        maxLength={4}
+        style={s.input}
+      />
+
       <Text style={s.strong}>Repeat on</Text>
       <View style={styles.chips}>
         {weekdays.map((label, day) => {
           const checked = selectedDays.includes(day);
           return (
-            <Pressable key={label} accessibilityRole="checkbox" accessibilityState={{ checked }}
-              style={[styles.chip, checked && styles.activeChip]} onPress={() => {
-                setSelectedDays(current => current.includes(day) ? current.filter(value => value !== day) : [...current, day]);
+            <Pressable
+              key={label}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked }}
+              style={[styles.chip, checked && styles.activeChip]}
+              onPress={() => {
+                setSelectedDays(current =>
+                  current.includes(day) ? current.filter(value => value !== day) : [...current, day]
+                );
                 setError('');
-              }}>
+              }}
+            >
               <Text style={styles.chartValue}>{label}</Text>
             </Pressable>
           );
         })}
       </View>
+
       {error ? <Text accessibilityLiveRegion="polite" style={{ color: color.danger }}>{error}</Text> : null}
       <Button label="Save habit" onPress={submit} />
     </>
   );
 }
+
 const styles = StyleSheet.create({
   planner: { padding: 16, gap: 12, borderRadius: 24, backgroundColor: '#E8E0FB' },
   scheduleStrip: { flexDirection: 'row', gap: 4 },
