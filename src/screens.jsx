@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { categories, filterHabits, isScheduled, reportDays, scheduleOn, scheduledStreak, plannerWeek, weekdays, weeklyPlan } from './habits';
+import { categories, filterHabits, isScheduled, reportDays, scheduleOn, scheduledStreak, plannerWeek, weekdays, weeklyPlan, dateKey } from './habits';
 import { Button, color, Empty, Heading, s } from './ui';
 
 function scheduleLabel(habit, today) {
@@ -244,29 +244,75 @@ export function Progress({ habits, now }) {
 
 export function Details({ habit, now, today, edit, remove }) {
   const category = categories[habit.category];
-  const recent = [...habit.days].sort().reverse().slice(0, 7);
+  const recent = [];
+
+  for (let offset = 0; offset < 7; offset += 1) {
+    const key = dateKey(now, -offset);
+    const date = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - offset
+    );
+
+    if (habit.days.includes(key)) {
+      recent.push({ key, status: 'Completed' });
+    } else if (offset > 0 && habit.createdOn && isScheduled(habit, date, key)) {
+      recent.push({ key, status: 'Missed' });
+    }
+  }
+
   return (
     <>
       <View style={[styles.panel, { backgroundColor: category.color }]}>
         <Text style={{ fontSize: 34 }}>{category.icon}</Text>
-        <Heading eyebrow={habit.category.toUpperCase()} title={habit.name} subtitle={habit.note || 'A small action to return to every day.'} />
+        <Heading
+          eyebrow={habit.category.toUpperCase()}
+          title={habit.name}
+          subtitle={habit.note || 'A small action to return to every day.'}
+        />
       </View>
+
       <View style={styles.panel}>
         <Text style={s.strong}>Schedule</Text>
         <Text style={s.muted}>{scheduleLabel(habit, today)}</Text>
       </View>
+
       <View style={styles.stats}>
-        <View style={styles.stat}><Text style={styles.statNumber}>{scheduledStreak(habit, now)}</Text><Text style={s.muted}>Scheduled check-in streak</Text></View>
-        <View style={styles.stat}><Text style={styles.statNumber}>{habit.days.length}</Text><Text style={s.muted}>Days completed</Text></View>
+        <View style={styles.stat}>
+          <Text style={styles.statNumber}>{scheduledStreak(habit, now)}</Text>
+          <Text style={s.muted}>Scheduled check-in streak</Text>
+        </View>
+        <View style={styles.stat}>
+          <Text style={styles.statNumber}>{habit.days.length}</Text>
+          <Text style={s.muted}>Days completed</Text>
+        </View>
       </View>
+
       <View style={styles.panel}>
         <Text style={s.section}>Recent check-ins</Text>
-        {recent.length ? recent.map(day => <Text key={day} style={s.muted}>✓  {day}</Text>) : <Text style={s.muted}>Your completed days will appear here.</Text>}
+        {recent.length > 0 ? (
+          recent.map(({ key, status }) => (
+            <Text key={key} style={s.muted}>{key} · {status}</Text>
+          ))
+        ) : (
+          <Text style={s.muted}>No check-in history for the last 7 days.</Text>
+        )}
       </View>
+
       <Button label="Edit habit" secondary onPress={edit} />
-      <Button label="Delete habit" secondary danger onPress={() => Alert.alert('Delete this habit?', 'Its check-ins will also be deleted.', [
-        { text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: remove },
-      ])} />
+      <Button
+        label="Delete habit"
+        secondary
+        danger
+        onPress={() => Alert.alert(
+          'Delete this habit?',
+          'Its check-ins will also be deleted.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: remove },
+          ]
+        )}
+      />
     </>
   );
 }
