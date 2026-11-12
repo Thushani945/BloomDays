@@ -200,44 +200,212 @@ export function ManageHabits({ habits, today, open, add, edit }) {
   );
 }
 
+function MonthlyCalendar({ habits, now }) {
+  const [monthsAgo, setMonthsAgo] = useState(0);
+  const year = now.getFullYear();
+  const month = now.getMonth() - monthsAgo;
+  const first = new Date(year, month, 1);
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  const today = dateKey(now);
+
+  const statusColors = {
+    Complete: '#DBF2CD',
+    Partial: '#FFF0BF',
+    Missed: '#FFDCCD',
+    Pending: '#DCEEFF',
+    'No habits': '#F2F3EE',
+    Upcoming: '#FFFFFF',
+  };
+
+  const days = Array.from({ length: totalDays }, (_, index) => {
+    const number = index + 1;
+    const date = new Date(year, month, number);
+    const key = dateKey(date);
+
+    if (key > today) return { key, number, status: 'Upcoming' };
+
+    const completed = habits.filter(habit => habit.days.includes(key));
+    const planned = habits.filter(
+      habit => habit.days.includes(key) || isScheduled(habit, date, key)
+    );
+
+    let status = 'No habits';
+    if (planned.length > 0) {
+      if (completed.length === planned.length) status = 'Complete';
+      else if (completed.length > 0) status = 'Partial';
+      else status = key === today ? 'Pending' : 'Missed';
+    }
+
+    return { key, number, status };
+  });
+
+  const cellStyle = { width: `${100 / 7}%`, padding: 2 };
+
+  return (
+    <View style={styles.panel}>
+      <Text style={s.section}>Monthly calendar</Text>
+      <View style={styles.weekNav}>
+        <Button
+          label="‹ Older"
+          secondary
+          onPress={() => setMonthsAgo(value => value + 1)}
+        />
+        <Button
+          label="Newer ›"
+          secondary
+          disabled={monthsAgo === 0}
+          onPress={() => setMonthsAgo(value => value - 1)}
+        />
+      </View>
+
+      <Text style={s.strong}>
+        {first.toLocaleDateString('en-LK', { month: 'long', year: 'numeric' })}
+      </Text>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        {weekdays.map(day => (
+          <View key={day} style={cellStyle}>
+            <Text style={[s.muted, { textAlign: 'center', fontSize: 11 }]}>
+              {day}
+            </Text>
+          </View>
+        ))}
+
+        {Array.from({ length: first.getDay() }, (_, index) => (
+          <View key={`blank-${index}`} style={cellStyle} />
+        ))}
+
+        {days.map(({ key, number, status }) => (
+          <View
+            key={key}
+            style={cellStyle}
+            accessible
+            accessibilityLabel={`${key}, ${status}`}
+          >
+            <View
+              style={{
+                backgroundColor: statusColors[status],
+                borderColor: color.line,
+                borderWidth: 1,
+                borderRadius: 8,
+                minHeight: 34,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={styles.chartValue}>{number}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.chips}>
+        {Object.entries(statusColors).map(([status, backgroundColor]) => (
+          <Text
+            key={status}
+            style={[styles.chartValue, { backgroundColor, padding: 5 }]}
+          >
+            {status}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function Progress({ habits, now }) {
+  const [reportView, setReportView] = useState('Week');
   const [weeksAgo, setWeeksAgo] = useState(0);
+
   const week = reportDays(habits, now, weeksAgo);
   const done = week.reduce((total, day) => total + day.done, 0);
   const planned = week.reduce((total, day) => total + day.planned, 0);
   const bestStreak = Math.max(0, ...habits.map(habit => scheduledStreak(habit, now)));
-  const format = date => date.toLocaleDateString('en-LK', { month: 'short', day: 'numeric' });
+  const totalCheckIns = habits.reduce((total, habit) => total + habit.days.length, 0);
+
+  const format = date =>
+    date.toLocaleDateString('en-LK', { month: 'short', day: 'numeric' });
+
   return (
     <>
-      <Heading eyebrow="ACTIVITY REPORT" title="Progress" subtitle="See how consistently you follow your schedule." />
+      <Heading
+        eyebrow="ACTIVITY REPORT"
+        title="Progress"
+        subtitle="See how consistently you follow your schedule."
+      />
+
       <View style={styles.stats}>
         <View style={[styles.stat, { backgroundColor: '#DBF2CD' }]}>
-          <Text style={styles.statNumber}>{bestStreak}</Text><Text style={s.muted}>Top active streak</Text>
+          <Text style={styles.statNumber}>{bestStreak}</Text>
+          <Text style={s.muted}>Top active streak</Text>
         </View>
         <View style={[styles.stat, { backgroundColor: '#EEE0FF' }]}>
-          <Text style={styles.statNumber}>{habits.reduce((total, habit) => total + habit.days.length, 0)}</Text>
+          <Text style={styles.statNumber}>{totalCheckIns}</Text>
           <Text style={s.muted}>Total check-ins</Text>
         </View>
       </View>
-      <View style={styles.panel}>
-        <Text style={s.section}>Weekly consistency</Text>
-        <View style={styles.weekNav}>
-          <Button label="‹ Older" secondary onPress={() => setWeeksAgo(value => value + 1)} />
-          <Button label="Newer ›" secondary disabled={weeksAgo === 0} onPress={() => setWeeksAgo(value => value - 1)} />
-        </View>
-        <Text style={s.muted}>{format(week[0].date)} – {format(week[6].date)} · {week[6].date.getFullYear()}</Text>
-        <Text style={styles.statNumber}>{planned ? Math.round(done / planned * 100) + '%' : '—'}</Text>
-        <Text style={s.muted}>{done} of {planned} scheduled check-ins complete</Text>
-        {week.map(day => (
-          <View key={day.key} style={styles.chartRow} accessible accessibilityLabel={day.key + ', ' + day.done + ' of ' + day.planned + ' complete'}>
-            <Text style={[s.muted, { width: 44 }]}>{weekdays[day.date.getDay()]}</Text>
-            <View style={[styles.track, styles.grow, { backgroundColor: '#E8EFE3' }]}>
-              <View style={[styles.fill, { backgroundColor: '#4B805A', width: (day.planned ? day.done / day.planned * 100 : 0) + '%' }]} />
-            </View>
-            <Text style={styles.chartValue}>{day.planned ? day.done + '/' + day.planned : '—'}</Text>
+
+      <CategoryPicker
+        options={['Week', 'Month']}
+        value={reportView}
+        select={setReportView}
+      />
+
+      {reportView === 'Month' ? (
+        <MonthlyCalendar habits={habits} now={now} />
+      ) : (
+        <View style={styles.panel}>
+          <Text style={s.section}>Weekly consistency</Text>
+          <View style={styles.weekNav}>
+            <Button
+              label="‹ Older"
+              secondary
+              onPress={() => setWeeksAgo(value => value + 1)}
+            />
+            <Button
+              label="Newer ›"
+              secondary
+              disabled={weeksAgo === 0}
+              onPress={() => setWeeksAgo(value => value - 1)}
+            />
           </View>
-        ))}
-      </View>
+
+          <Text style={s.muted}>
+            {format(week[0].date)} – {format(week[6].date)} · {week[6].date.getFullYear()}
+          </Text>
+          <Text style={styles.statNumber}>
+            {planned ? `${Math.round((done / planned) * 100)}%` : '—'}
+          </Text>
+          <Text style={s.muted}>
+            {done} of {planned} scheduled check-ins complete
+          </Text>
+
+          {week.map(day => {
+            const percent = day.planned ? (day.done / day.planned) * 100 : 0;
+
+            return (
+              <View
+                key={day.key}
+                style={styles.chartRow}
+                accessible
+                accessibilityLabel={`${day.key}, ${day.done} of ${day.planned} complete`}
+              >
+                <Text style={[s.muted, { width: 44 }]}>
+                  {weekdays[day.date.getDay()]}
+                </Text>
+                <View style={[styles.track, styles.grow, { backgroundColor: '#E8EFE3' }]}>
+                  <View
+                    style={[styles.fill, { backgroundColor: '#4B805A', width: `${percent}%` }]}
+                  />
+                </View>
+                <Text style={styles.chartValue}>
+                  {day.planned ? `${day.done}/${day.planned}` : '—'}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </>
   );
 }
