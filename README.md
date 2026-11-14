@@ -2,7 +2,7 @@
 
 Name: K N T Kithulgoda  
 Index Number: 2022/ICT/88 
-Module: IT3133 – Mobile Communication and Computing  
+
 
 ## Project Description
 
